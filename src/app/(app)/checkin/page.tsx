@@ -16,7 +16,7 @@ export default async function CheckinPage() {
     });
   } else {
     const reports = await prisma.user.findMany({ where: { managerId: user.id } });
-    const reportIds = reports.map(r => r.id);
+    const reportIds = reports.map((r: typeof reports[0]) => r.id);
     goals = await prisma.goal.findMany({
       where: { ownerId: role === "ADMIN" ? undefined : { in: reportIds }, status: "APPROVED" },
       include: {
