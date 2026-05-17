@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("EMPLOYEE") // EMPLOYEE | MANAGER | ADMIN
+  managerId String?
+  manager   User?    @relation("Reports", fields: [managerId], references: [id])
+  reports   User[]   @relation("Reports")
+  createdAt DateTime @default(now())
+
+  goals        Goal[]       @relation("OwnerGoals")
+  sharedGoals  SharedGoal[]
+  checkIns     CheckIn[]
+  auditLogs    AuditLog[]
+  unlockedGoals GoalUnlock[] @relation("UnlockedBy")
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  ownerId     String
+  owner       User     @relation("OwnerGoals", fields: [ownerId], references: [id])
+  thrustArea  String
+  title       String
+  description String
+  uomType     String   // MIN | MAX | TIMELINE | ZERO
+  target      Float
+  targetDate  DateTime?
+  weightage   Float
+  status      String   @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | REWORK
+  isShared    Boolean  @default(false)
+  cycleYear   Int      @default(2025)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  achievements Achievement[]
+  sharedGoals  SharedGoal[]
+  auditLogs    AuditLog[]
+  unlockEvents GoalUnlock[]
+}
+
+model SharedGoal {
+  id         String @id @default(cuid())
+  goalId     String
+  goal       Goal   @relation(fields: [goalId], references: [id])
+  userId     String
+  user       User   @relation(fields: [userId], references: [id])
+  weightage  Float
+  createdAt  DateTime @default(now())
+}
+
+model Achievement {
+  id         String   @id @default(cuid())
+  goalId     String
+  goal       Goal     @relation(fields: [goalId], references: [id])
+  quarter    Int      // 1 | 2 | 3 | 4
+  actual     Float
+  actualDate DateTime?
+  status     String   @default("NOT_STARTED") // NOT_STARTED | ON_TRACK | COMPLETED
+  score      Float    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  checkIns CheckIn[]
+}
+
+model CheckIn {
+  id            String      @id @default(cuid())
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  managerId     String
+  manager       User        @relation(fields: [managerId], references: [id])
+  comment       String
+  createdAt     DateTime    @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  goalId    String?
+  goal      Goal?    @relation(fields: [goalId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  details   String
+  createdAt DateTime @default(now())
+}
+
+model PerformanceCycle {
+  id            String   @id @default(cuid())
+  year          Int      @unique
+  name          String
+  isActive      Boolean  @default(false)
+  goalsUnlocked Boolean  @default(true)
+  checkinsOpen  Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model GoalUnlock {
+  id             String   @id @default(cuid())
+  goalId         String
+  goal           Goal     @relation(fields: [goalId], references: [id])
+  unlockedById   String
+  unlockedBy     User     @relation("UnlockedBy", fields: [unlockedById], references: [id])
+  previousStatus String
+  reason         String
+  createdAt      DateTime @default(now())
+}
