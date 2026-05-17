@@ -121,10 +121,10 @@ export default async function GoalsPage() {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {goals.map((goal, i) => {
+          {goals.map((goal: typeof goals[0], i: number) => {
             const uom = UOM_META[goal.uomType] ?? UOM_META.MIN;
             const st = STATUS_STYLE[goal.status] ?? STATUS_STYLE.DRAFT;
-            const latestAch = goal.achievements.sort((a, b) => b.quarter - a.quarter)[0];
+            const latestAch = goal.achievements.sort((a: typeof goal.achievements[0], b: typeof goal.achievements[0]) => b.quarter - a.quarter)[0];
             return (
               <div
                 key={goal.id}

@@ -45,7 +45,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (body.weightage !== undefined) {
     if (!isOwner && role !== "ADMIN") return NextResponse.json({ error: "Only owner/admin can edit weightage." }, { status: 403 });
     const existingGoals = await prisma.goal.findMany({ where: { ownerId: goal.ownerId, cycleYear: goal.cycleYear } });
-    const currentTotalWeightage = existingGoals.filter(g => g.id !== id).reduce((sum, g) => sum + g.weightage, 0);
+    const currentTotalWeightage = existingGoals.filter((g: typeof existingGoals[0]) => g.id !== id).reduce((sum: number, g: typeof existingGoals[0]) => sum + g.weightage, 0);
     if (currentTotalWeightage + Number(body.weightage) > 100) {
       return NextResponse.json({ error: `Total weightage cannot exceed 100%. Other goals total: ${currentTotalWeightage}%` }, { status: 400 });
     }
