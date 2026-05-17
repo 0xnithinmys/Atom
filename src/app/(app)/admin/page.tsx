@@ -30,7 +30,7 @@ export default async function AdminPage() {
   const STATUS_COLORS: Record<string, string> = { DRAFT: "#94a3b8", SUBMITTED: "#fbbf24", APPROVED: "#34d399", REWORK: "#f87171" };
   const AUDIT_COLORS: Record<string, string> = { CREATED: "#818cf8", SUBMITTED: "#fbbf24", APPROVED: "#34d399", REWORK: "#f87171", EDITED: "#64748b" };
 
-  const approvalRate = goals.length > 0 ? Math.round((goals.filter(g => g.status === "APPROVED").length / goals.length) * 100) : 0;
+  const approvalRate = goals.length > 0 ? Math.round((goals.filter((g: typeof goals[0]) => g.status === "APPROVED").length / goals.length) * 100) : 0;
 
   return (
     <div className="fade-in" style={{ maxWidth: 1200 }}>
