@@ -82,7 +82,7 @@ export default async function AdminPage() {
               </tr>
             </thead>
             <tbody>
-              {users.map(u => {
+              {users.map((u: typeof users[0]) => {
                 const rc = ROLE_CONFIG[u.role] ?? ROLE_CONFIG.EMPLOYEE;
                 const initials = u.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
                 return (
