@@ -9,7 +9,7 @@ export default async function ApprovePage() {
   if (user.role === "EMPLOYEE") redirect("/goals");
 
   const reports = await prisma.user.findMany({ where: { managerId: user.id } });
-  const reportIds = reports.map(r => r.id);
+  const reportIds = reports.map((r: typeof reports[0]) => r.id);
 
   const pendingGoals = await prisma.goal.findMany({
     where: {

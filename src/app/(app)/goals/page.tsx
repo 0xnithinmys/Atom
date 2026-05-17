@@ -35,8 +35,8 @@ export default async function GoalsPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const totalWeightage = goals.reduce((s, g) => s + g.weightage, 0);
-  const canSubmitAll = totalWeightage === 100 && goals.some(g => g.status === "DRAFT");
+  const totalWeightage = goals.reduce((s: number, g: typeof goals[0]) => s + g.weightage, 0);
+  const canSubmitAll = totalWeightage === 100 && goals.some((g: typeof goals[0]) => g.status === "DRAFT");
 
   return (
     <div className="fade-in" style={{ maxWidth: 900 }}>
@@ -72,7 +72,7 @@ export default async function GoalsPage() {
             </Link>
           )}
           {canSubmitAll && (
-            <GoalActions goalIds={goals.filter(g => g.status === "DRAFT").map(g => g.id)} />
+            <GoalActions goalIds={goals.filter((g: typeof goals[0]) => g.status === "DRAFT").map((g: typeof goals[0]) => g.id)} />
           )}
         </div>
       </div>
