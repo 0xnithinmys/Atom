@@ -57,7 +57,7 @@ export default function ConfigureCyclesPage() {
         <table>
           <thead><tr><th>Cycle</th><th>Active</th><th>Goals</th><th>Check-ins</th></tr></thead>
           <tbody>
-            {cycles.map((c) => (
+            {cycles.map((c: typeof cycles[0]) => (
               <tr key={c.id}>
                 <td>{c.name} ({c.year})</td>
                 <td><button className="btn-secondary" onClick={() => patchCycle(c.id, { isActive: true })}>{c.isActive ? "Active" : "Set Active"}</button></td>

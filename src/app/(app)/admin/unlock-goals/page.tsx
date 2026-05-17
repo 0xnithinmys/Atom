@@ -55,7 +55,7 @@ export default function UnlockGoalsPage() {
         <table>
           <thead><tr><th>Goal</th><th>Owner</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>
-            {goals.map((g) => (
+            {goals.map((g: typeof goals[0]) => (
               <tr key={g.id}>
                 <td>{g.title}</td>
                 <td>{g.owner.name}</td>
@@ -80,7 +80,7 @@ export default function UnlockGoalsPage() {
             <table>
               <thead><tr><th>Goal</th><th>Owner</th><th>Unlocked By</th><th>From</th><th>Reason</th><th>Time</th></tr></thead>
               <tbody>
-                {recentUnlocks.map((e) => (
+                {recentUnlocks.map((e: typeof recentUnlocks[0]) => (
                   <tr key={e.id}>
                     <td style={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.goal.title}</td>
                     <td style={{ color: "#94a3b8" }}>{e.goal.owner.name}</td>

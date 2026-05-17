@@ -14,7 +14,7 @@ export async function GET() {
 
   if (role === "MANAGER") {
     const reports = await prisma.user.findMany({ where: { managerId: userId } });
-    const reportIds = reports.map((r) => r.id);
+    const reportIds = reports.map((r: typeof reports[0]) => r.id);
     const goals = await prisma.goal.findMany({
       where: { ownerId: { in: [userId, ...reportIds] }, cycleYear: activeCycle.year },
       include: { owner: { select: { id: true, name: true } }, achievements: true },
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   const existingGoals = await prisma.goal.findMany({ where: { ownerId: userId, cycleYear: activeCycle.year } });
   if (existingGoals.length >= 8) return NextResponse.json({ error: "Maximum 8 goals per employee" }, { status: 400 });
 
-  const currentTotalWeightage = existingGoals.reduce((sum, g) => sum + g.weightage, 0);
+  const currentTotalWeightage = existingGoals.reduce((sum: number, g: typeof existingGoals[0]) => sum + g.weightage, 0);
   if (currentTotalWeightage + Number(body.weightage) > 100) {
     return NextResponse.json({ error: `Total weightage cannot exceed 100%. Current total is ${currentTotalWeightage}%.` }, { status: 400 });
   }
