@@ -123,7 +123,7 @@ export default async function AdminPage() {
             <table>
               <thead><tr><th>Goal</th><th>Owner</th><th>Status</th></tr></thead>
               <tbody>
-                {goals.slice(0, 10).map(g => (
+                {goals.slice(0, 10).map((g: typeof goals[0]) => (
                   <tr key={g.id}>
                     <td style={{ fontWeight: 500, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#94a3b8" }}>{g.title}</td>
                     <td style={{ color: "#64748b", fontSize: "0.78rem" }}>{g.owner.name}</td>
@@ -149,7 +149,7 @@ export default async function AdminPage() {
             <table>
               <thead><tr><th>Action</th><th>By</th><th>Goal</th><th>Time</th></tr></thead>
               <tbody>
-                {auditLogs.map(log => (
+                {auditLogs.map((log: typeof auditLogs[0]) => (
                   <tr key={log.id}>
                     <td>
                       <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
