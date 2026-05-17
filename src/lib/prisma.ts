@@ -1,5 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
+import { PrismaClient } from "@prisma/client";
 
 // Strip Prisma-only query params that the native pg driver doesn't understand
 const rawUrl = process.env.DATABASE_URL ?? "";
@@ -15,15 +16,9 @@ const pool = new Pool({
 
 const adapter = new PrismaPg(pool);
 
-// Lazy import avoids the TypeScript "no exported member" issue in Prisma 7
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { PrismaClient } = require("@prisma/client");
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
-type TPrismaClient = import("@prisma/client").PrismaClient;
-
-const globalForPrisma = globalThis as unknown as { prisma: TPrismaClient | undefined };
-
-export const prisma: TPrismaClient =
+export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({ adapter });
 
