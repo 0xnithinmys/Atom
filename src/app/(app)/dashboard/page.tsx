@@ -18,17 +18,17 @@ export default async function DashboardPage() {
   const activeCycle = await getActiveCycle();
 
   const myGoals = await prisma.goal.findMany({ where: { ownerId: user.id, cycleYear: activeCycle.year }, include: { achievements: true } });
-  const totalWeightage = myGoals.reduce((s, g) => s + g.weightage, 0);
-  const approved = myGoals.filter(g => g.status === "APPROVED").length;
-  const submitted = myGoals.filter(g => g.status === "SUBMITTED").length;
-  const drafted = myGoals.filter(g => g.status === "DRAFT").length;
+  const totalWeightage = myGoals.reduce((s: number, g: typeof myGoals[0]) => s + g.weightage, 0);
+  const approved = myGoals.filter((g: typeof myGoals[0]) => g.status === "APPROVED").length;
+  const submitted = myGoals.filter((g: typeof myGoals[0]) => g.status === "SUBMITTED").length;
+  const drafted = myGoals.filter((g: typeof myGoals[0]) => g.status === "DRAFT").length;
 
   let teamSize = 0;
   let pendingApprovals = 0;
   if (role === "MANAGER" || role === "ADMIN") {
     const reports = await prisma.user.findMany({ where: { managerId: user.id } });
     teamSize = reports.length;
-    const reportIds = reports.map(r => r.id);
+    const reportIds = reports.map((r: typeof reports[0]) => r.id);
     pendingApprovals = await prisma.goal.count({ where: { ownerId: { in: reportIds }, status: "SUBMITTED", cycleYear: activeCycle.year } });
   }
 
@@ -172,7 +172,7 @@ export default async function DashboardPage() {
                 { label: "Draft", count: drafted, color: "#94a3b8" },
                 { label: "Submitted", count: submitted, color: "#fbbf24" },
                 { label: "Approved", count: approved, color: "#34d399" },
-                { label: "Rework", count: myGoals.filter(g => g.status === "REWORK").length, color: "#f87171" },
+                { label: "Rework", count: myGoals.filter((g: typeof myGoals[0]) => g.status === "REWORK").length, color: "#f87171" },
               ].map(s => (
                 <div key={s.label} style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.875rem" }}>
                   <div style={{ fontSize: "0.78rem", color: "#64748b", width: 60 }}>{s.label}</div>
@@ -198,7 +198,7 @@ export default async function DashboardPage() {
               {auditLogs.length === 0 ? (
                 <div style={{ color: "#475569", fontSize: "0.8rem", textAlign: "center", padding: "1rem 0" }}>No activity yet</div>
               ) : (
-                auditLogs.map(log => (
+                auditLogs.map((log: typeof auditLogs[0]) => (
                   <div key={log.id} style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start", padding: "0.5rem 0", borderBottom: "1px solid rgba(99,102,241,0.07)" }}>
                     <div style={{ width: 6, height: 6, borderRadius: "50%", background: actionColors[log.action] ?? "#475569", marginTop: "0.45rem", flexShrink: 0 }} />
                     <div style={{ flex: 1 }}>
