@@ -1,7 +1,7 @@
-# AtomQuest Portal - Complete Feature Documentation
+Ôªø# Atom Portal - Complete Feature Documentation
 
 ## 1. Product Overview
-AtomQuest is an internal performance management portal for:
+Atom is an internal performance management portal for:
 - Defining yearly goals
 - Assigning weightage (total 100%)
 - Manager approval and rework loops
@@ -76,9 +76,9 @@ Login page: `/login`
 - On successful login, user redirected into app shell
 
 Default seeded users (if seed run):
-- Admin: `admin@atomberg.com` / `admin123`
-- Manager: `manager@atomberg.com` / `manager123`
-- Employee: `employee@atomberg.com` / `employee123`
+- Admin: `admin@atom.com` / `admin123`
+- Manager: `manager@atom.com` / `manager123`
+- Employee: `employee@atom.com` / `employee123`
 
 ## 4. Main App Screens and How to Use
 
@@ -286,7 +286,7 @@ Purpose:
 Features:
 - Rule config (`GOAL_NOT_SUBMITTED`, `GOAL_PENDING_APPROVAL`, `CHECKIN_NOT_COMPLETED`)
 - Enable/disable and threshold days per rule
-- Manual ìRun Escalation Checkî execution
+- Manual ‚ÄúRun Escalation Check‚Äù execution
 - Event filter by status/rule/search
 - Inline resolve workflow with resolution comment UI
 - Time-to-resolution and dispatch history visibility
@@ -417,4 +417,5 @@ Admin escalations:
 - If goals cannot be submitted, check total weightage and cycle goal window state.
 - If check-in logging is disabled, verify active check-in quarter window.
 - If escalation list is empty unexpectedly, run manual escalation evaluation from admin escalations page.
+
 

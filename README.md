@@ -1,6 +1,6 @@
-# AtomQuest Goal Management Portal
+# Atom Goal Management Portal
 
-AtomQuest is a role-based performance management system for defining goals, approving submissions, tracking quarterly achievements, handling escalations, and generating analytics.
+Atom is a role-based performance management system for defining goals, approving submissions, tracking quarterly achievements, handling escalations, and generating analytics.
 
 The application is built on Next.js App Router with Prisma and PostgreSQL, and includes AI-assisted goal drafting and quality review workflows.
 
@@ -62,7 +62,7 @@ flowchart TD
 flowchart LR
     A["App Layout<br/>src/app/(app)/layout.tsx"] --> B["Sidebar"]
     A --> C["AppShell"]
-    A --> D["AtomQuestCopilot"]
+    A --> D["AtomAssistant"]
     C --> E["Feature Pages"]
     E --> F["Route Handlers<br/>src/app/api/*"]
     F --> G["Prisma + PostgreSQL"]

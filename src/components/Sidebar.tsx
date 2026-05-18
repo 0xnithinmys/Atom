@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -89,7 +89,7 @@ export default function Sidebar({ role, name }: { role: string; name: string }) 
               transition: "max-width 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.15s",
               whiteSpace: "nowrap",
             }}>
-              <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#f1f5f9", lineHeight: 1.1 }}>AtomQuest</div>
+              <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#f1f5f9", lineHeight: 1.1 }}>Atom</div>
               <div style={{ fontSize: "0.6rem", color: "#475569", fontWeight: 500, letterSpacing: "0.05em" }}>GOAL PORTAL</div>
             </div>
           </Link>
@@ -199,7 +199,7 @@ export default function Sidebar({ role, name }: { role: string; name: string }) 
           gap: "0.625rem",
         }}>
           <div
-            title={collapsed ? `${name} · ${role}` : undefined}
+            title={collapsed ? `${name} - ${role}` : undefined}
             style={{
               display: "flex", alignItems: "center",
               gap: collapsed ? 0 : "0.625rem",
@@ -254,7 +254,7 @@ export default function Sidebar({ role, name }: { role: string; name: string }) 
         </div>
       </aside>
 
-      {/* Floating toggle handle — rides the right edge of sidebar */}
+      {/* Floating toggle handle at the right edge of the sidebar */}
       <button
         onClick={toggle}
         title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -283,3 +283,4 @@ export default function Sidebar({ role, name }: { role: string; name: string }) 
     </>
   );
 }
+

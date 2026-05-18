@@ -2,49 +2,28 @@ import { groq } from "@ai-sdk/groq";
 import { streamText } from "ai";
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
+import {
+  ASSISTANT_FALLBACK_MODELS,
+  ASSISTANT_SYSTEM_PROMPT,
+  DEFAULT_ASSISTANT_MODEL,
+} from "@/lib/assistantConfig";
 
 export const maxDuration = 60;
 export const runtime = "nodejs";
 
-const SYSTEM_PROMPT = `You are AtomQuest Copilot — a world-class AI assistant embedded in the Atomberg AtomQuest Goal Tracking Portal.
+const MAX_MESSAGES = 24;
+const MAX_CONTENT_LENGTH = 4000;
+type ChatMessage = { role: "assistant" | "user"; content: string };
 
-## YOUR ROLE
-You assist Atomberg employees, managers, and admins in everything related to performance management and the AtomQuest portal. You are smart, concise, encouraging, and always professional.
+function parseTemperature(raw: string | undefined) {
+  const value = Number(raw ?? "0.4");
+  if (!Number.isFinite(value)) return 0.4;
+  return Math.min(Math.max(value, 0), 1);
+}
 
-## THE PORTAL YOU SUPPORT
-The AtomQuest Portal is an internal goal-setting and performance tracking system with these features:
-- **Goal Setting**: Employees set up to 8 goals per financial year. Each goal must have 100% total weightage.
-- **Goal Lifecycle**: DRAFT → SUBMITTED → APPROVED (or REWORK). Managers approve/rework goals.
-- **Goal Properties**: Title, Description, Thrust Area, Unit of Measure (MIN/MAX/TIMELINE/ZERO), Target, Weightage (%).
-- **Achievements**: Employees log quarterly achievements (Q1-Q4) for each approved goal with a score (0-100%).
-- **Check-ins**: Managers review and comment on achievement logs.
-- **Reports**: Admins and Managers can view reports and export CSV data.
-- **Performance Cycles**: Admins configure FY cycles, open/close goal windows and check-in periods.
-- **Roles**: EMPLOYEE, MANAGER, ADMIN — each with different permissions.
-
-## WHAT YOU CAN HELP WITH
-1. **Goal Formulation**: Help write SMART (Specific, Measurable, Achievable, Relevant, Time-bound) goals
-2. **Weightage Strategy**: Advise on how to distribute weightage across goals effectively
-3. **Thrust Areas**: Guide users on categorizing goals under the right thrust areas
-4. **Achievement Logging**: Help craft meaningful quarterly achievement descriptions
-5. **Manager Feedback**: Help managers write constructive, actionable feedback for rework requests
-6. **Portal Navigation**: Explain how to use any feature of the portal step-by-step
-7. **Performance Insights**: Provide tips on improving performance scores and goal completion
-8. **General Productivity**: OKR frameworks, goal-setting best practices, performance management advice
-9. **Troubleshooting**: Help users understand error messages or workflow issues in the portal
-
-## RESPONSE STYLE
-- Use **markdown** formatting (bold, bullet points, numbered lists) for clarity
-- Keep responses concise but complete — never too long
-- Be warm, encouraging, and professional
-- When suggesting goals or feedback, give concrete examples
-- If you don't know something portal-specific, admit it gracefully and suggest they contact their admin
-
-## EXAMPLE INTERACTIONS
-- "Help me write a goal for reducing customer complaints" → Write a full SMART goal with all fields
-- "What's the weightage strategy for 5 goals?" → Give a concrete distribution recommendation
-- "How do I submit my goals?" → Step-by-step portal instructions
-- "Write rework feedback for this goal..." → Professional, constructive feedback template`;
+function uniqueModelList(primary: string, fallbacks: string[]) {
+  return [primary, ...fallbacks].filter((model, index, list) => model && list.indexOf(model) === index);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,7 +36,18 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const messages = Array.isArray(body.messages) ? body.messages : [];
+    const rawMessages: Array<{ role?: string; content?: unknown }> = Array.isArray(body.messages) ? body.messages : [];
+
+    const messages: ChatMessage[] = rawMessages
+      .filter((m: { role?: string; content?: unknown }) => typeof m === "object" && m !== null)
+      .map((obj: { role?: string; content?: unknown }): ChatMessage => {
+        const role = obj.role === "assistant" ? "assistant" : "user";
+        const content = typeof obj.content === "string" ? obj.content.trim() : "";
+        return { role, content };
+      })
+      .filter((m) => m.content.length > 0)
+      .slice(-MAX_MESSAGES)
+      .map((m) => ({ ...m, content: m.content.slice(0, MAX_CONTENT_LENGTH) }));
 
     if (!messages.length) {
       return new Response(JSON.stringify({ error: "No messages provided" }), {
@@ -66,22 +56,36 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const model = groq("openai/gpt-oss-20b");
+    const configuredModel = process.env.GROQ_MODEL?.trim() || DEFAULT_ASSISTANT_MODEL;
+    const modelCandidates = uniqueModelList(configuredModel, ASSISTANT_FALLBACK_MODELS);
+    const userRole = (session.user as { role?: string }).role;
+    const roleContext = userRole ? `\nCurrent user role: ${userRole}.` : "";
+    const systemPrompt = `${ASSISTANT_SYSTEM_PROMPT}${roleContext}`;
+    const temperature = parseTemperature(process.env.ASSISTANT_TEMPERATURE);
 
-    const result = streamText({
-      model,
-      system: SYSTEM_PROMPT,
-      messages,
-      temperature: 0.7,
-    });
+    let lastError: unknown = null;
+    for (const modelId of modelCandidates) {
+      try {
+        const result = streamText({
+          model: groq(modelId),
+          system: systemPrompt,
+          messages,
+          temperature,
+          maxOutputTokens: 900,
+        });
+        return result.toTextStreamResponse();
+      } catch (error: unknown) {
+        lastError = error;
+      }
+    }
 
-    return result.toTextStreamResponse();
+    throw lastError ?? new Error("No available model for chat response.");
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to process chat request.";
     console.error("Chat API Error:", error);
     return new Response(
       JSON.stringify({ error: message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 }

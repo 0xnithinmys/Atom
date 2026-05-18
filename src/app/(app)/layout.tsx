@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { SidebarProvider } from "@/components/SidebarProvider";
 import AppShell from "@/components/AppShell";
-import { AtomQuestCopilot } from "@/components/AtomQuestCopilot";
+import { AtomAssistant } from "@/components/AtomAssistant";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div style={{ display: "flex" }}>
         <Sidebar role={user.role ?? "EMPLOYEE"} name={user.name ?? "User"} />
         <AppShell>{children}</AppShell>
-        <AtomQuestCopilot />
+        <AtomAssistant />
       </div>
     </SidebarProvider>
   );

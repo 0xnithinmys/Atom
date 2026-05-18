@@ -1,4 +1,4 @@
-import "dotenv/config";
+﻿import "dotenv/config";
 import { prisma } from "../src/lib/prisma";
 import { getCurrentCheckinWindow } from "../src/lib/checkinWindow";
 
@@ -13,23 +13,23 @@ async function main() {
   await prisma.performanceCycle.updateMany({ where: { year: { not: year } }, data: { isActive: false } });
 
   const admin = await prisma.user.upsert({
-    where: { email: "admin@atomberg.com" },
+    where: { email: "admin@atom.com" },
     update: {},
-    create: { name: "Admin User", email: "admin@atomberg.com", password: "admin123", role: "ADMIN" },
+    create: { name: "Admin User", email: "admin@atom.com", password: "admin123", role: "ADMIN" },
   });
 
   const manager = await prisma.user.upsert({
-    where: { email: "manager@atomberg.com" },
+    where: { email: "manager@atom.com" },
     update: { managerId: admin.id },
-    create: { name: "Riya Sharma", email: "manager@atomberg.com", password: "manager123", role: "MANAGER", managerId: admin.id },
+    create: { name: "Riya Sharma", email: "manager@atom.com", password: "manager123", role: "MANAGER", managerId: admin.id },
   });
 
   const emp1 = await prisma.user.upsert({
-    where: { email: "employee@atomberg.com" },
+    where: { email: "employee@atom.com" },
     update: {},
     create: {
       name: "Arjun Mehta",
-      email: "employee@atomberg.com",
+      email: "employee@atom.com",
       password: "employee123",
       role: "EMPLOYEE",
       managerId: manager.id,
@@ -37,11 +37,11 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { email: "emp2@atomberg.com" },
+    where: { email: "employee2@atom.com" },
     update: { managerId: manager.id },
     create: {
       name: "Priya Nair",
-      email: "emp2@atomberg.com",
+      email: "employee2@atom.com",
       password: "emp123",
       role: "EMPLOYEE",
       managerId: manager.id,
@@ -150,8 +150,8 @@ async function main() {
     },
   });
 
-  const emp2 = await prisma.user.findUnique({ where: { email: "emp2@atomberg.com" } });
-  if (!emp2) throw new Error("Seed user emp2@atomberg.com not found");
+  const emp2 = await prisma.user.findUnique({ where: { email: "employee2@atom.com" } });
+  if (!emp2) throw new Error("Seed user employee2@atom.com not found");
 
   const goal4 = await prisma.goal.upsert({
     where: { id: "seed-goal-4" },
@@ -410,9 +410,9 @@ async function main() {
   }
 
   console.log("Seed data created");
-  console.log("Admin:    admin@atomberg.com   / admin123");
-  console.log("Manager:  manager@atomberg.com / manager123");
-  console.log("Employee: employee@atomberg.com / employee123");
+  console.log("Admin:    admin@atom.com   / admin123");
+  console.log("Manager:  manager@atom.com / manager123");
+  console.log("Employee: employee@atom.com / employee123");
   console.log(`Active cycle: FY ${year}`);
   console.log("Demo escalation scenarios prepared.");
   void admin;
@@ -421,3 +421,4 @@ async function main() {
 main()
   .catch(console.error)
   .finally(() => prisma.$disconnect());
+

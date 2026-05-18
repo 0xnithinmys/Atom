@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { THRUST_AREAS } from "@/lib/utils";
+import { APP_NAME } from "@/lib/assistantConfig";
 
 const UOM_TYPES = [
   { value: "MIN",      label: "Maximize",   desc: "Higher actual = better (e.g. Sales Revenue)", Icon: TrendingUp,   color: "#818cf8" },
@@ -78,7 +79,7 @@ export default function NewGoalPage() {
     setError("");
     setAiLoading(true);
     try {
-      const prompt = `Generate one high-quality SMART goal for AtomQuest.
+      const prompt = `Generate one high-quality SMART goal for ${APP_NAME}.
 Return markdown with these headings only:
 Title
 Description
@@ -114,7 +115,7 @@ Current allocated weightage: ${currentTotalWeightage}%`;
     setError("");
     setAiLoading(true);
     try {
-      const prompt = `Review this AtomQuest goal for SMART quality.
+      const prompt = `Review this ${APP_NAME} goal for SMART quality.
 Score each item out of 5: Specific, Measurable, Achievable, Relevant, Time-bound.
 Then provide:
 1) Overall score out of 25
@@ -192,7 +193,7 @@ Weightage: ${form.weightage || "N/A"}%`;
           <Label className="label">Thrust Area *</Label>
           <Select value={form.thrustArea} onValueChange={v => set("thrustArea", v ?? "")} required>
             <SelectTrigger className="input" style={{ height: "auto" }}>
-              <SelectValue placeholder="Select thrust area…" />
+              <SelectValue placeholder="Select thrust area..." />
             </SelectTrigger>
             <SelectContent>
               {THRUST_AREAS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
@@ -217,7 +218,7 @@ Weightage: ${form.weightage || "N/A"}%`;
           <Label className="label">Description</Label>
           <Textarea
             className="input"
-            placeholder="Describe how this goal will be measured and achieved…"
+            placeholder="Describe how this goal will be measured and achieved..."
             value={form.description}
             onChange={e => set("description", e.target.value)}
             rows={3}
@@ -261,20 +262,20 @@ Weightage: ${form.weightage || "N/A"}%`;
             {form.uomType === "TIMELINE" ? (
               <Input type="date" className="input" value={form.targetDate} onChange={e => { set("targetDate", e.target.value); set("target", "1"); }} required />
             ) : (
-              <Input type="number" className="input" placeholder={form.uomType === "ZERO" ? "0" : "Enter target value…"} value={form.target} onChange={e => set("target", e.target.value)} min="0" required />
+              <Input type="number" className="input" placeholder={form.uomType === "ZERO" ? "0" : "Enter target value..."} value={form.target} onChange={e => set("target", e.target.value)} min="0" required />
             )}
           </div>
           <div className="form-group">
             <Label className="label">Weightage (%) *</Label>
             <Input type="number" className="input" placeholder="Min 10%" value={form.weightage} onChange={e => set("weightage", e.target.value)} min="10" max="100" required />
-            <div style={{ fontSize: "0.7rem", color: "#475569", marginTop: "0.25rem" }}>Must be between 10–100%, total across all goals = 100%</div>
+            <div style={{ fontSize: "0.7rem", color: "#475569", marginTop: "0.25rem" }}>Must be between 10-100%, total across all goals = 100%</div>
           </div>
         </div>
 
         {/* Actions */}
         <div style={{ display: "flex", gap: "0.75rem", paddingTop: "0.25rem", borderTop: "1px solid rgba(99,102,241,0.1)" }}>
           <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Saving…</> : <><CheckCircle2 size={15} /> Save Goal</>}
+            {loading ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Saving...</> : <><CheckCircle2 size={15} /> Save Goal</>}
           </button>
           <button type="button" className="btn-secondary" onClick={() => router.push("/goals")}>Cancel</button>
         </div>

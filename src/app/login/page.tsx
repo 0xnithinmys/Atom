@@ -8,11 +8,12 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { APP_NAME } from "@/lib/assistantConfig";
 
 const DEMO_ACCOUNTS = [
-  { label: "Employee", email: "employee@atomberg.com", pw: "employee123", color: "#818cf8", bg: "rgba(129,140,248,0.12)" },
-  { label: "Manager",  email: "manager@atomberg.com",  pw: "manager123",  color: "#34d399", bg: "rgba(52,211,153,0.12)"  },
-  { label: "Admin",    email: "admin@atomberg.com",    pw: "admin123",    color: "#fbbf24", bg: "rgba(251,191,36,0.12)"  },
+  { label: "Employee", email: "employee@atom.com", pw: "employee123", color: "#818cf8", bg: "rgba(129,140,248,0.12)" },
+  { label: "Manager",  email: "manager@atom.com",  pw: "manager123",  color: "#34d399", bg: "rgba(52,211,153,0.12)"  },
+  { label: "Admin",    email: "admin@atom.com",    pw: "admin123",    color: "#fbbf24", bg: "rgba(251,191,36,0.12)"  },
 ];
 
 export default function LoginPage() {
@@ -64,7 +65,7 @@ export default function LoginPage() {
             <Zap size={30} color="white" />
           </div>
           <h1 style={{ fontSize: "2rem", fontWeight: 900, margin: 0, letterSpacing: "-0.03em", color: "#f1f5f9" }}>
-            Atom<span className="gradient-text">Quest</span>
+            {APP_NAME}
           </h1>
           <p style={{ color: "#475569", marginTop: "0.375rem", fontSize: "0.9rem" }}>
             Goal Setting & Tracking Portal
@@ -96,7 +97,7 @@ export default function LoginPage() {
                 <Input
                   type="email"
                   className="input"
-                  placeholder="you@atomberg.com"
+                  placeholder="you@atom.com"
                   value={form.email}
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                   style={{ paddingLeft: "2.25rem" }}
@@ -112,7 +113,7 @@ export default function LoginPage() {
                 <Input
                   type="password"
                   className="input"
-                  placeholder="••••••••"
+                  placeholder="********"
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   style={{ paddingLeft: "2.25rem" }}
@@ -128,7 +129,7 @@ export default function LoginPage() {
               style={{ width: "100%", justifyContent: "center", padding: "0.75rem", marginTop: "0.375rem", fontSize: "0.9rem" }}
             >
               {loading
-                ? <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Signing in…</>
+                ? <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Signing in...</>
                 : <><LogIn size={16} /> Sign In</>
               }
             </button>

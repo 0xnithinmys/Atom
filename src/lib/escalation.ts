@@ -82,7 +82,7 @@ async function dispatchEvent(eventId: string, level: number, userId: string, mes
         message: recipient.channelMessage,
       },
     });
-    const emailResult = await sendEmail(recipient.email, "AtomQuest Escalation Alert", recipient.channelMessage);
+    const emailResult = await sendEmail(recipient.email, "Atom Escalation Alert", recipient.channelMessage);
     await prisma.escalationDispatch.create({
       data: {
         eventId,
