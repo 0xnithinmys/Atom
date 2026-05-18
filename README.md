@@ -1,36 +1,239 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AtomQuest Goal Management Portal
 
-## Getting Started
+AtomQuest is a role-based performance management system for defining goals, approving submissions, tracking quarterly achievements, handling escalations, and generating analytics.
 
-First, run the development server:
+The application is built on Next.js App Router with Prisma and PostgreSQL, and includes AI-assisted goal drafting and quality review workflows.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Table of Contents
+- [Core Capabilities](#core-capabilities)
+- [Role Model](#role-model)
+- [Architecture](#architecture)
+- [Goal and Escalation Lifecycles](#goal-and-escalation-lifecycles)
+- [Data Model](#data-model)
+- [API Surface](#api-surface)
+- [Project Structure](#project-structure)
+- [Configuration](#configuration)
+- [Runbook](#runbook)
+- [Documentation Folder](#documentation-folder)
+
+## Core Capabilities
+- Goal creation with UoM models (`MIN`, `MAX`, `TIMELINE`, `ZERO`)
+- Weightage governance (minimum goal weightage and 100% total allocation checks)
+- Manager approval and rework loop (`DRAFT -> SUBMITTED -> APPROVED/REWORK`)
+- Quarterly achievement logging and manager check-in comments
+- Shared goal distribution to multiple recipients with recipient-level weightage
+- Rule-based escalation engine with resolution workflow
+- Admin cycle controls (active FY, goal window, check-in window)
+- Analytics dashboard with filters and CSV/XLSX export
+- In-app AI assistant and goal quality tools
+
+## Role Model
+| Role | Typical Responsibilities |
+|---|---|
+| `EMPLOYEE` | Create and submit goals, log quarterly achievements, monitor notifications |
+| `MANAGER` | Approve/rework goals, review check-ins, push shared goals, monitor team metrics |
+| `ADMIN` | Manage cycles, unlock goals, configure escalation rules, resolve escalations, system oversight |
+
+## Architecture
+
+### System Architecture
+```mermaid
+flowchart TD
+    U[Users<br/>Employee / Manager / Admin] --> UI[Next.js Web App<br/>App Router + Client Components]
+
+    UI --> AUTH[Auth Routes<br/>/api/auth/[...nextauth]]
+    UI --> DOMAIN[Domain APIs<br/>Goals, Check-ins, Shared Goals, Reports, Admin]
+    UI --> AIAPI[AI API<br/>/api/chat]
+
+    AUTH --> PRISMA[Prisma Client<br/>PrismaPg Adapter]
+    DOMAIN --> PRISMA
+
+    DOMAIN --> ESC[Escalation Engine<br/>lib/escalation + lib/escalationScheduler]
+    ESC --> PRISMA
+
+    PRISMA --> DB[(PostgreSQL)]
+    AIAPI --> GROQ[(Groq LLM Provider)]
+
+    DOMAIN --> EXPORTS[Export Layer<br/>CSV + XLSX]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Runtime Layout
+```mermaid
+flowchart LR
+    A[App Layout<br/>src/app/(app)/layout.tsx] --> B[Sidebar]
+    A --> C[AppShell]
+    A --> D[AtomQuestCopilot]
+    C --> E[Feature Pages]
+    E --> F[Route Handlers<br/>src/app/api/*]
+    F --> G[Prisma + PostgreSQL]
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Goal and Escalation Lifecycles
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Goal Lifecycle
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT
+    DRAFT --> SUBMITTED: employee submits
+    SUBMITTED --> APPROVED: manager/admin approves
+    SUBMITTED --> REWORK: manager/admin requests rework
+    REWORK --> SUBMITTED: employee resubmits
+    APPROVED --> APPROVED: quarterly achievements + check-ins
+```
 
-## Learn More
+### Escalation Lifecycle
+```mermaid
+stateDiagram-v2
+    [*] --> OPEN
+    OPEN --> OPEN: threshold breach re-evaluated
+    OPEN --> RESOLVED: admin resolves with comment
+    RESOLVED --> OPEN: optionally reopened
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Data Model
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Domain ER Diagram
+```mermaid
+erDiagram
+    User ||--o{ Goal : owns
+    User ||--o{ User : manages
+    Goal ||--o{ Achievement : tracks
+    Achievement ||--o{ CheckIn : receives
+    Goal ||--o{ SharedGoal : published_as
+    User ||--o{ SharedGoal : receives
+    Goal ||--o{ AuditLog : appears_in
+    User ||--o{ AuditLog : performs
+    Goal ||--o{ GoalUnlock : unlock_events
+    User ||--o{ GoalUnlock : unlocked_by
+    User ||--o{ EscalationEvent : subject
+    Goal ||--o{ EscalationEvent : escalates
+    EscalationEvent ||--o{ EscalationDispatch : dispatches
+    User ||--o{ EscalationDispatch : recipient
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Primary models are defined in `prisma/schema.prisma`.
 
-## Deploy on Vercel
+## API Surface
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Authentication
+- `GET/POST /api/auth/[...nextauth]`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Goals and Progress
+- `GET /api/goals`
+- `POST /api/goals`
+- `GET /api/goals/[id]`
+- `PATCH /api/goals/[id]`
+- `POST /api/achievements`
+- `POST /api/checkins`
+
+### Shared Goals
+- `GET /api/shared-goals`
+- `POST /api/shared-goals`
+- `PATCH /api/shared-goals/[id]`
+
+### Cycles and Reporting
+- `GET /api/cycle`
+- `GET /api/reports`
+- `GET /api/notifications`
+
+### AI
+- `POST /api/chat`
+
+### Admin Operations
+- `GET /api/admin/cycles`
+- `POST /api/admin/cycles`
+- `PATCH /api/admin/cycles/[id]`
+- `GET /api/admin/unlocks`
+- `POST /api/admin/unlocks`
+- `GET /api/admin/escalation-rules`
+- `PATCH /api/admin/escalation-rules`
+- `GET /api/admin/escalations`
+- `POST /api/admin/escalations`
+- `PATCH /api/admin/escalations/[id]`
+
+## Project Structure
+```text
+src/
+  app/
+    (app)/                     # Authenticated UI routes
+      dashboard/
+      goals/
+      checkin/
+      reports/
+      notifications/
+      admin/
+    api/                       # Route handlers
+      auth/
+      goals/
+      achievements/
+      checkins/
+      shared-goals/
+      reports/
+      notifications/
+      admin/
+  components/                  # Reusable UI + shell components
+  lib/                         # Auth, Prisma, cycle, escalation, utilities
+prisma/
+  schema.prisma               # Data model
+  seed.ts                     # Seed data
+doc/
+  FEATURES_AND_USAGE_GUIDE.md # Detailed functional handbook
+```
+
+## Configuration
+Create `.env` with required variables:
+
+```env
+NEXTAUTH_SECRET=...
+NEXTAUTH_URL=http://localhost:3000
+DATABASE_URL=postgresql://...
+DIRECT_URL=postgresql://...
+GROQ_API_KEY=...
+SMTP_USER=...
+APP_PASSWORD=...
+```
+
+Notes:
+- `DATABASE_URL` is used by runtime queries.
+- `DIRECT_URL` is used by Prisma config/migrations.
+- If credentials include reserved URL characters, URL-encode them.
+
+## Runbook
+
+### Install
+```bash
+npm install
+```
+
+### Generate Prisma Client (automatic on postinstall)
+```bash
+npx prisma generate
+```
+
+### Seed Initial Data
+```bash
+npm run seed
+```
+
+### Start Development Server
+```bash
+npm run dev
+```
+
+### Build Production Bundle
+```bash
+npm run build
+npm run start
+```
+
+### Static Type Validation
+```bash
+npx tsc --noEmit
+```
+
+## Documentation Folder
+Detailed functional documentation is available in:
+
+- `doc/FEATURES_AND_USAGE_GUIDE.md`
+
+This document expands on each screen, role behavior, workflows, and operational usage patterns.
