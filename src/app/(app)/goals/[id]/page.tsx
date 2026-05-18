@@ -18,7 +18,7 @@ export default async function GoalDetailPage({
   const goal = await prisma.goal.findUnique({
     where: { id },
     include: {
-      owner: { select: { id: true, name: true, email: true } },
+      owner: { select: { id: true, name: true, email: true, managerId: true } },
       achievements: {
         include: { checkIns: { include: { manager: { select: { name: true } } } } },
         orderBy: { quarter: "asc" },
@@ -33,7 +33,12 @@ export default async function GoalDetailPage({
 
   if (!goal) notFound();
   let sharedLinkId: string | null = null;
-  if (goal.owner.id !== user.id) {
+  
+  const isOwner = goal.owner.id === user.id;
+  const isManager = goal.owner.managerId === user.id;
+  const isAdmin = user.role === "ADMIN";
+
+  if (!isOwner && !isManager && !isAdmin) {
     if (!sg) notFound();
     const shared = await prisma.sharedGoal.findUnique({ where: { id: sg } });
     if (!shared || shared.goalId !== id || shared.userId !== user.id) notFound();

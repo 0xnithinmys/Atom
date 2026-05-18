@@ -151,10 +151,12 @@ export default function ApproveClient({ goals }: { goals: Goal[] }) {
                   </div>
 
                   <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
-                    <Link href={`/goals/${goal.id}`}>
-                      <button className="btn-secondary" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }}>
-                        <Eye size={13} /> View
-                      </button>
+                    <Link 
+                      href={`/goals/${goal.id}`}
+                      className="btn-secondary" 
+                      style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}
+                    >
+                      <Eye size={13} /> View
                     </Link>
                     <button
                       className="btn-success"
