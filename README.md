@@ -39,33 +39,33 @@ The application is built on Next.js App Router with Prisma and PostgreSQL, and i
 ### System Architecture
 ```mermaid
 flowchart TD
-    U[Users<br/>Employee / Manager / Admin] --> UI[Next.js Web App<br/>App Router + Client Components]
+    U["Users<br/>Employee / Manager / Admin"] --> UI["Next.js Web App<br/>App Router + Client Components"]
 
-    UI --> AUTH[Auth Routes<br/>/api/auth/[...nextauth]]
-    UI --> DOMAIN[Domain APIs<br/>Goals, Check-ins, Shared Goals, Reports, Admin]
-    UI --> AIAPI[AI API<br/>/api/chat]
+    UI --> AUTH["Auth Routes<br/>/api/auth/catch-all-nextauth"]
+    UI --> DOMAIN["Domain APIs<br/>Goals, Check-ins, Shared Goals, Reports, Admin"]
+    UI --> AIAPI["AI API<br/>/api/chat"]
 
-    AUTH --> PRISMA[Prisma Client<br/>PrismaPg Adapter]
+    AUTH --> PRISMA["Prisma Client<br/>PrismaPg Adapter"]
     DOMAIN --> PRISMA
 
-    DOMAIN --> ESC[Escalation Engine<br/>lib/escalation + lib/escalationScheduler]
+    DOMAIN --> ESC["Escalation Engine<br/>lib/escalation + lib/escalationScheduler"]
     ESC --> PRISMA
 
-    PRISMA --> DB[(PostgreSQL)]
-    AIAPI --> GROQ[(Groq LLM Provider)]
+    PRISMA --> DB[("PostgreSQL")]
+    AIAPI --> GROQ[("Groq LLM Provider")]
 
-    DOMAIN --> EXPORTS[Export Layer<br/>CSV + XLSX]
+    DOMAIN --> EXPORTS["Export Layer<br/>CSV + XLSX"]
 ```
 
 ### Runtime Layout
 ```mermaid
 flowchart LR
-    A[App Layout<br/>src/app/(app)/layout.tsx] --> B[Sidebar]
-    A --> C[AppShell]
-    A --> D[AtomQuestCopilot]
-    C --> E[Feature Pages]
-    E --> F[Route Handlers<br/>src/app/api/*]
-    F --> G[Prisma + PostgreSQL]
+    A["App Layout<br/>src/app/(app)/layout.tsx"] --> B["Sidebar"]
+    A --> C["AppShell"]
+    A --> D["AtomQuestCopilot"]
+    C --> E["Feature Pages"]
+    E --> F["Route Handlers<br/>src/app/api/*"]
+    F --> G["Prisma + PostgreSQL"]
 ```
 
 ## Goal and Escalation Lifecycles
