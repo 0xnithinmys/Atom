@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
+import * as XLSX from "xlsx";
 import {
   BarChart3, Download, Search, Filter,
-  TrendingUp, Users, Target, Award,
+  TrendingUp, Users, Target, Award, Flame,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -48,10 +49,63 @@ export default function ReportsClient({ goals }: { goals: Goal[] }) {
     a.click();
   }
 
+  function exportExcel() {
+    const rows = filtered.map(g => {
+      const getQ = (n: number) => g.achievements.find(a => a.quarter === n);
+      const q1 = getQ(1); const q2 = getQ(2); const q3 = getQ(3); const q4 = getQ(4);
+      return {
+        Employee: g.owner.name,
+        Email: g.owner.email,
+        Goal: g.title,
+        ThrustArea: g.thrustArea,
+        UoM: g.uomType,
+        Target: g.target,
+        Weightage: g.weightage,
+        Status: g.status,
+        Q1Actual: q1?.actual ?? "",
+        Q1Score: q1?.score ?? "",
+        Q2Actual: q2?.actual ?? "",
+        Q2Score: q2?.score ?? "",
+        Q3Actual: q3?.actual ?? "",
+        Q3Score: q3?.score ?? "",
+        Q4Actual: q4?.actual ?? "",
+        Q4Score: q4?.score ?? "",
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Achievement Report");
+    XLSX.writeFile(wb, `atomquest-report-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
   const approvedCount = goals.filter(g => g.status === "APPROVED").length;
   const allAch = goals.flatMap(g => g.achievements);
   const avgScore = allAch.length > 0 ? allAch.reduce((s, a) => s + a.score, 0) / allAch.length : 0;
   const uniqueEmployees = new Set(goals.map(g => g.owner.email)).size;
+  const quarterAverages = [1, 2, 3, 4].map((quarter) => {
+    const values = allAch.filter((a) => a.quarter === quarter).map((a) => a.score);
+    return values.length > 0 ? values.reduce((s, v) => s + v, 0) / values.length : 0;
+  });
+  const qoqTrend = [1, 2, 3].map((idx) => quarterAverages[idx] - quarterAverages[idx - 1]);
+  const thrustAreaHeatmap = Object.entries(
+    goals.reduce((acc, goal) => {
+      const key = goal.thrustArea || "Unspecified";
+      const scores = goal.achievements.map((a) => a.score);
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(...scores);
+      return acc;
+    }, {} as Record<string, number[]>),
+  ).map(([area, scores]) => {
+    const avg = scores.length ? scores.reduce((s, v) => s + v, 0) / scores.length : 0;
+    return { area, avg, samples: scores.length };
+  }).sort((a, b) => b.avg - a.avg);
+
+  const heatColor = (value: number) => {
+    if (value >= 85) return "rgba(34,197,94,0.28)";
+    if (value >= 70) return "rgba(132,204,22,0.24)";
+    if (value >= 55) return "rgba(234,179,8,0.24)";
+    return "rgba(239,68,68,0.24)";
+  };
 
   return (
     <div className="fade-in" style={{ maxWidth: 1200 }}>
@@ -65,9 +119,14 @@ export default function ReportsClient({ goals }: { goals: Goal[] }) {
           <h1 className="page-title">Reports & Analytics</h1>
           <p className="page-subtitle" style={{ marginBottom: 0 }}>Achievement overview · Planned vs Actual · CSV export</p>
         </div>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
         <button className="btn-success" onClick={exportCSV}>
           <Download size={15} /> Export CSV
         </button>
+        <button className="btn-secondary" onClick={exportExcel}>
+          <Download size={15} /> Export Excel
+        </button>
+        </div>
       </div>
 
       {/* Summary Stats */}
@@ -86,6 +145,55 @@ export default function ReportsClient({ goals }: { goals: Goal[] }) {
             <div style={{ fontSize: "0.75rem", color: "#475569", fontWeight: 600 }}>{s.label}</div>
           </div>
         ))}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div className="card">
+          <div style={{ fontSize: "0.78rem", color: "#94a3b8", fontWeight: 700, marginBottom: "0.75rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>QoQ Score Trends</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "0.5rem" }}>
+            {[1, 2, 3, 4].map((q, idx) => {
+              const trend = idx === 0 ? null : qoqTrend[idx - 1];
+              return (
+                <div key={q} style={{ border: "1px solid rgba(99,102,241,0.16)", borderRadius: "0.6rem", padding: "0.65rem", background: "rgba(15,23,42,0.45)" }}>
+                  <div style={{ fontSize: "0.72rem", color: "#64748b" }}>{Q_LABELS[q]}</div>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#cbd5e1" }}>{quarterAverages[idx].toFixed(1)}%</div>
+                  <div style={{ fontSize: "0.72rem", color: trend === null ? "#475569" : trend >= 0 ? "#34d399" : "#f87171" }}>
+                    {trend === null ? "Baseline" : `${trend >= 0 ? "+" : ""}${trend.toFixed(1)} vs prev`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="card">
+          <div style={{ fontSize: "0.78rem", color: "#94a3b8", fontWeight: 700, marginBottom: "0.75rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>Top Momentum</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {qoqTrend.map((change, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: "0.6rem", padding: "0.6rem 0.7rem", background: "rgba(30,41,59,0.5)", border: "1px solid rgba(99,102,241,0.15)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.8rem", color: "#cbd5e1" }}>
+                  <Flame size={13} color={change >= 0 ? "#34d399" : "#f87171"} /> {Q_LABELS[i + 1]} to {Q_LABELS[i + 2]}
+                </div>
+                <div style={{ fontSize: "0.8rem", fontWeight: 800, color: change >= 0 ? "#34d399" : "#f87171" }}>{change >= 0 ? "+" : ""}{change.toFixed(1)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: "1.5rem" }}>
+        <div style={{ fontSize: "0.78rem", color: "#94a3b8", fontWeight: 700, marginBottom: "0.75rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>Thrust Area Heatmap</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: "0.6rem" }}>
+          {thrustAreaHeatmap.length === 0 ? (
+            <div style={{ color: "#475569", fontSize: "0.8rem" }}>No achievement data yet.</div>
+          ) : thrustAreaHeatmap.map((item) => (
+            <div key={item.area} style={{ borderRadius: "0.65rem", padding: "0.75rem", background: heatColor(item.avg), border: "1px solid rgba(148,163,184,0.25)" }}>
+              <div style={{ fontSize: "0.72rem", color: "#cbd5e1", marginBottom: "0.2rem", fontWeight: 700 }}>{item.area}</div>
+              <div style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc" }}>{item.avg.toFixed(1)}%</div>
+              <div style={{ fontSize: "0.7rem", color: "#e2e8f0" }}>{item.samples} data points</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Filters */}
@@ -196,3 +304,4 @@ export default function ReportsClient({ goals }: { goals: Goal[] }) {
     </div>
   );
 }
+

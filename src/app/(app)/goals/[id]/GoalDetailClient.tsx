@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, TrendingUp, TrendingDown, Calendar, Shield,
   CheckCircle2, XCircle, Send, Target, Scale, Hash,
-  MessageSquare, ClipboardList, Loader2, AlertTriangle,
+  MessageSquare, ClipboardList, Loader2, AlertTriangle, Link2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -45,17 +45,36 @@ const AUDIT_COLORS: Record<string, string> = {
   CREATED: "#818cf8", SUBMITTED: "#fbbf24", APPROVED: "#34d399", REWORK: "#f87171", EDITED: "#64748b",
 };
 
-export default function GoalDetailClient({ goal, currentUserId, currentRole }: { goal: Goal; currentUserId: string; currentRole: string }) {
+export default function GoalDetailClient({ goal, currentUserId, currentRole, sharedLinkId }: { goal: Goal; currentUserId: string; currentRole: string; sharedLinkId?: string | null }) {
   const router = useRouter();
   const isOwner = goal.owner.id === currentUserId;
   const canApprove = currentRole === "MANAGER" || currentRole === "ADMIN";
 
   const [achForm, setAchForm] = useState({ quarter: "1", actual: "", actualDate: "", status: "ON_TRACK" });
   const [checkinForm, setCheckinForm] = useState({ achievementId: "", comment: "" });
+  const [sharedWeightage, setSharedWeightage] = useState(String(goal.weightage));
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   const showMsg = (text: string, type: "success" | "error") => { setMsg({ text, type }); setTimeout(() => setMsg(null), 4000); };
+
+  async function saveSharedWeightage() {
+    if (!sharedLinkId) return;
+    setLoading(true);
+    const res = await fetch(`/api/shared-goals/${sharedLinkId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ weightage: Number(sharedWeightage) }),
+    });
+    setLoading(false);
+    if (res.ok) {
+      showMsg("Shared weightage updated.", "success");
+      router.refresh();
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    showMsg(data.error ?? "Failed to update shared weightage", "error");
+  }
 
   async function submitAchievement(e: React.FormEvent) {
     e.preventDefault();
@@ -105,7 +124,12 @@ export default function GoalDetailClient({ goal, currentUserId, currentRole }: {
           <ArrowLeft size={13} /> Back
         </button>
         <span className={`badge ${GOAL_STATUS_STYLE[goal.status] ?? "badge-draft"}`}>{goal.status}</span>
-        {goal.isShared && <span className="badge" style={{ background: "rgba(129,140,248,0.12)", color: "#818cf8", border: "1px solid rgba(129,140,248,0.25)" }}>🔗 SHARED</span>}
+        {goal.isShared && (
+          <span className="badge" style={{ background: "rgba(129,140,248,0.12)", color: "#818cf8", border: "1px solid rgba(129,140,248,0.25)", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+            <Link2 size={12} />
+            SHARED
+          </span>
+        )}
       </div>
 
       {/* Title + Actions */}
@@ -175,6 +199,18 @@ export default function GoalDetailClient({ goal, currentUserId, currentRole }: {
           ))}
         </div>
       </div>
+
+      {sharedLinkId && (
+        <div className="card" style={{ marginBottom: "1.25rem" }}>
+          <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "0.6rem" }}>
+            Shared KPI recipient controls (title/target are read-only).
+          </div>
+          <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", maxWidth: 320 }}>
+            <Input type="number" className="input" min="10" value={sharedWeightage} onChange={(e) => setSharedWeightage(e.target.value)} />
+            <button className="btn-primary" onClick={saveSharedWeightage} disabled={loading}>Save Weight %</button>
+          </div>
+        </div>
+      )}
 
       {/* Achievements */}
       <div className="card" style={{ marginBottom: "1.25rem" }}>

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   TrendingUp, TrendingDown, Calendar, Shield, CheckCircle2,
-  XCircle, Eye, AlertTriangle, User, Folder, Target, Scale,
+  XCircle, Eye, AlertTriangle, User, Folder, Target, Scale, Clock,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,9 @@ export default function ApproveClient({ goals }: { goals: Goal[] }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [edits, setEdits] = useState<Record<string, { target: string; weightage: string }>>({});
+  const uniqueEmployees = new Set(goals.map((g) => g.owner.email)).size;
+  const avgWeightage = goals.length ? goals.reduce((s, g) => s + g.weightage, 0) / goals.length : 0;
+  const thrustAreas = new Set(goals.map((g) => g.thrustArea)).size;
 
   const getEdit = (id: string) => edits[id] ?? { target: "", weightage: "" };
   const setEdit = (id: string, k: "target" | "weightage", v: string) =>
@@ -70,6 +73,20 @@ export default function ApproveClient({ goals }: { goals: Goal[] }) {
           Review and approve submitted goal sheets from your team.
           {goals.length > 0 && <> &nbsp;·&nbsp; <strong style={{ color: "#fbbf24" }}>{goals.length}</strong> pending</>}
         </p>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "0.75rem", marginBottom: "1.25rem" }}>
+        {[
+          { label: "Pending Approvals", value: goals.length, Icon: Clock, color: "#fbbf24" },
+          { label: "Employees Impacted", value: uniqueEmployees, Icon: User, color: "#818cf8" },
+          { label: "Avg Goal Weight", value: `${avgWeightage.toFixed(1)}%`, Icon: Scale, color: "#34d399" },
+          { label: "Thrust Areas", value: thrustAreas, Icon: Folder, color: "#a78bfa" },
+        ].map((s) => (
+          <div key={s.label} className="stat-card" style={{ padding: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: s.color }}><s.Icon size={14} /><span style={{ fontSize: "0.72rem", fontWeight: 700 }}>{s.label}</span></div>
+            <div style={{ color: s.color, fontWeight: 800, fontSize: "1.3rem" }}>{s.value}</div>
+          </div>
+        ))}
       </div>
 
       {error && (

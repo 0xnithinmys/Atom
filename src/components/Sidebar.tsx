@@ -2,9 +2,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Target, PlusCircle, CheckSquare, Users,
-  ClipboardList, ShieldCheck, BarChart3, LogOut, Zap,
+  ClipboardList, ShieldCheck, BarChart3, LogOut, Zap, Bell,
   PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -18,9 +19,12 @@ const NAV: NavItem[] = [
   { href: "/goals/new",     label: "New Goal",      Icon: PlusCircle,    roles: ["EMPLOYEE"] },
   { href: "/goals",         label: "My Goals",      Icon: Target,        roles: ["EMPLOYEE"] },
   { href: "/goals/approve", label: "Approve Goals", Icon: CheckSquare,   roles: ["MANAGER", "ADMIN"] },
+  { href: "/goals/shared",  label: "Shared Goals",  Icon: Users,          roles: ["MANAGER", "ADMIN"] },
   { href: "/goals",         label: "Team Goals",    Icon: Users,         roles: ["MANAGER"] },
   { href: "/checkin",       label: "Check-ins",     Icon: ClipboardList },
+  { href: "/notifications", label: "Notifications", Icon: Bell },
   { href: "/reports",       label: "Reports",       Icon: BarChart3,     roles: ["ADMIN", "MANAGER"] },
+  { href: "/admin/escalations", label: "Escalations", Icon: ClipboardList, roles: ["ADMIN"] },
   { href: "/admin",         label: "Admin Panel",   Icon: ShieldCheck,   roles: ["ADMIN"] },
 ];
 
@@ -37,6 +41,8 @@ export default function Sidebar({ role, name }: { role: string; name: string }) 
   const path = usePathname();
   const { collapsed, toggle } = useSidebar();
   const links = NAV.filter(n => !n.roles || n.roles.includes(role));
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const rc = ROLE_CONFIG[role] ?? ROLE_CONFIG.EMPLOYEE;
   const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
@@ -101,11 +107,13 @@ export default function Sidebar({ role, name }: { role: string; name: string }) 
             transition: "max-height 0.3s, opacity 0.2s",
           }}>Navigation</div>
 
-          {links.map(({ href, label, Icon }) => {
+          {mounted && links.map(({ href, label, Icon }) => {
             const isActive =
               path === href ||
+              (href === "/admin" && path === "/admin") ||
+              (href === "/admin/escalations" && path.startsWith("/admin/escalations")) ||
               (href === "/goals" && path.startsWith("/goals/") && !path.startsWith("/goals/new") && !path.startsWith("/goals/approve")) ||
-              (href !== "/dashboard" && href !== "/goals" && path.startsWith(href));
+              (href !== "/dashboard" && href !== "/goals" && href !== "/admin" && href !== "/admin/escalations" && path.startsWith(href));
 
             return (
               <Link

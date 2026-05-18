@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getActiveCycle } from "@/lib/cycle";
+import { evaluateEscalationsIfDue } from "@/lib/escalationScheduler";
 
 // PATCH /api/goals/[id] — update goal (approve / rework / edit)
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -71,6 +72,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     },
   });
 
+  await evaluateEscalationsIfDue();
   return NextResponse.json(updated);
 }
 

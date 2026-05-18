@@ -3,8 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import GoalDetailClient from "./GoalDetailClient";
 
-export default async function GoalDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function GoalDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ sg?: string }>;
+}) {
   const { id } = await params;
+  const { sg } = await searchParams;
   const session = await auth();
   const user = session!.user as { id: string; role?: string };
 
@@ -25,6 +32,14 @@ export default async function GoalDetailPage({ params }: { params: Promise<{ id:
   });
 
   if (!goal) notFound();
+  let sharedLinkId: string | null = null;
+  if (goal.owner.id !== user.id) {
+    if (!sg) notFound();
+    const shared = await prisma.sharedGoal.findUnique({ where: { id: sg } });
+    if (!shared || shared.goalId !== id || shared.userId !== user.id) notFound();
+    sharedLinkId = shared.id;
+    (goal as { weightage: number }).weightage = shared.weightage;
+  }
 
-  return <GoalDetailClient goal={goal as never} currentUserId={user.id} currentRole={user.role ?? "EMPLOYEE"} />;
+  return <GoalDetailClient goal={goal as never} currentUserId={user.id} currentRole={user.role ?? "EMPLOYEE"} sharedLinkId={sharedLinkId} />;
 }

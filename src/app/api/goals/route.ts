@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getActiveCycle } from "@/lib/cycle";
+import { evaluateEscalationsIfDue } from "@/lib/escalationScheduler";
 
 // GET /api/goals — fetch goals for current user (or team if manager)
 export async function GET() {
@@ -81,5 +82,6 @@ export async function POST(req: Request) {
     data: { goalId: goal.id, userId, action: "CREATED", details: `Goal "${goal.title}" created` },
   });
 
+  await evaluateEscalationsIfDue();
   return NextResponse.json(goal, { status: 201 });
 }

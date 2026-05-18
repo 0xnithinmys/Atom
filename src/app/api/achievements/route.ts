@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { computeScore } from "@/lib/utils";
 import { getActiveCycle } from "@/lib/cycle";
+import { canSubmitQuarter, getCurrentCheckinWindow } from "@/lib/checkinWindow";
+import { evaluateEscalationsIfDue } from "@/lib/escalationScheduler";
 
 // POST /api/achievements — log quarterly achievement
 export async function POST(req: Request) {
@@ -17,6 +19,14 @@ export async function POST(req: Request) {
   const activeCycle = await getActiveCycle();
   if (!activeCycle.checkinsOpen) {
     return NextResponse.json({ error: "Check-ins are currently closed for the active cycle." }, { status: 400 });
+  }
+  if (!canSubmitQuarter(activeCycle.year, Number(quarter))) {
+    const activeWindow = getCurrentCheckinWindow(activeCycle.year);
+    const activeLabel = activeWindow ? `${activeWindow.label} (Q${activeWindow.quarter})` : "No active check-in window";
+    return NextResponse.json(
+      { error: `Quarter ${quarter} check-in is not open today. Active window: ${activeLabel}.` },
+      { status: 400 }
+    );
   }
 
   const score = computeScore(
@@ -48,5 +58,6 @@ export async function POST(req: Request) {
     });
   }
 
+  await evaluateEscalationsIfDue();
   return NextResponse.json(achievement, { status: 201 });
 }

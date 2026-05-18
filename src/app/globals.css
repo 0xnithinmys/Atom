@@ -352,6 +352,11 @@ select.input option {
   background: var(--background);
 }
 
+.app-shell-content > * {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
 /* ── Nav Links ── */
 .nav-link {
   display: flex;
@@ -536,8 +541,8 @@ tr:hover td {
 
 .fade-in {
   animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 100% !important;
-  max-width: 100% !important;
+  width: 100%;
+  margin-inline: auto;
 }
 
 @keyframes shimmer {

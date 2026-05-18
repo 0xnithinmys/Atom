@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   TrendingUp, TrendingDown, Calendar, Shield, Target,
-  AlertTriangle, CheckCircle2, Loader2, ArrowLeft,
+  AlertTriangle, CheckCircle2, Loader2, ArrowLeft, Sparkles, ShieldCheck,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,10 @@ export default function NewGoalPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [cycleYear, setCycleYear] = useState<number | null>(null);
+  const [currentTotalWeightage, setCurrentTotalWeightage] = useState(0);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState("");
+  const [qualityFeedback, setQualityFeedback] = useState("");
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
   useEffect(() => {
@@ -36,13 +40,24 @@ export default function NewGoalPage() {
       if (!res.ok) return;
       const data = await res.json();
       setCycleYear(data.year);
+      const goalsRes = await fetch("/api/goals");
+      if (goalsRes.ok) {
+        const goals = (await goalsRes.json()) as Array<{ weightage: number }>;
+        const total = goals.reduce((sum, g) => sum + Number(g.weightage || 0), 0);
+        setCurrentTotalWeightage(total);
+      }
     })();
   }, []);
+
+  const enteredWeight = Number(form.weightage || 0);
+  const projectedTotal = currentTotalWeightage + enteredWeight;
+  const remainingAfterThis = 100 - projectedTotal;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (Number(form.weightage) < 10) { setError("Minimum weightage is 10%"); return; }
+    if (projectedTotal > 100) { setError(`You currently have ${currentTotalWeightage}%. This goal makes it ${projectedTotal}%. Reduce by ${projectedTotal - 100}%.`); return; }
     setLoading(true);
     const res = await fetch("/api/goals", {
       method: "POST",
@@ -53,6 +68,81 @@ export default function NewGoalPage() {
     setLoading(false);
     if (!res.ok) { setError(data.error ?? "Failed to create goal"); return; }
     router.push("/goals");
+  }
+
+  async function fetchAiSuggestion() {
+    if (!form.thrustArea) {
+      setError("Choose a thrust area before generating AI goal suggestion.");
+      return;
+    }
+    setError("");
+    setAiLoading(true);
+    try {
+      const prompt = `Generate one high-quality SMART goal for AtomQuest.
+Return markdown with these headings only:
+Title
+Description
+Target recommendation
+Weightage recommendation
+
+Context:
+Thrust Area: ${form.thrustArea}
+UOM: ${form.uomType}
+Cycle Year: ${cycleYear ?? new Date().getFullYear()}
+Current allocated weightage: ${currentTotalWeightage}%`;
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        setError("Could not generate AI goal suggestion right now.");
+        return;
+      }
+      setAiSuggestion(text.trim());
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  async function runQualityCheck() {
+    if (!form.title.trim()) {
+      setError("Enter a goal title before running quality check.");
+      return;
+    }
+    setError("");
+    setAiLoading(true);
+    try {
+      const prompt = `Review this AtomQuest goal for SMART quality.
+Score each item out of 5: Specific, Measurable, Achievable, Relevant, Time-bound.
+Then provide:
+1) Overall score out of 25
+2) Top 3 improvements
+3) Rewritten better version
+
+Goal details:
+Title: ${form.title}
+Description: ${form.description || "N/A"}
+Thrust Area: ${form.thrustArea || "N/A"}
+UOM: ${form.uomType}
+Target: ${form.target || "N/A"}
+Target Date: ${form.targetDate || "N/A"}
+Weightage: ${form.weightage || "N/A"}%`;
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        setError("Could not run goal quality check right now.");
+        return;
+      }
+      setQualityFeedback(text.trim());
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   return (
@@ -82,6 +172,20 @@ export default function NewGoalPage() {
       )}
 
       <form onSubmit={handleSubmit} className="card" style={{ display: "flex", flexDirection: "column", gap: "1.375rem" }}>
+        <div style={{ background: "rgba(30,41,59,0.45)", border: "1px solid rgba(99,102,241,0.18)", borderRadius: "0.75rem", padding: "0.875rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: "0.4rem" }}>
+            <span style={{ color: "#94a3b8" }}>Weightage Progress</span>
+            <span style={{ color: projectedTotal <= 100 ? "#34d399" : "#f87171", fontWeight: 700 }}>{projectedTotal}%</span>
+          </div>
+          <div className="progress-bar">
+            <div className="progress-fill" style={{ width: `${Math.min(projectedTotal, 100)}%`, background: projectedTotal <= 100 ? "linear-gradient(90deg,#6366f1,#8b5cf6)" : "linear-gradient(90deg,#ef4444,#f87171)" }} />
+          </div>
+          <div style={{ marginTop: "0.45rem", fontSize: "0.75rem", color: remainingAfterThis === 0 ? "#34d399" : remainingAfterThis > 0 ? "#fbbf24" : "#f87171" }}>
+            {remainingAfterThis > 0 && `You currently have ${currentTotalWeightage}%. Add ${remainingAfterThis}% more after this goal.`}
+            {remainingAfterThis === 0 && "Perfect 100%. This goal setup is submission-ready."}
+            {remainingAfterThis < 0 && `This exceeds 100% by ${Math.abs(remainingAfterThis)}%.`}
+          </div>
+        </div>
 
         {/* Thrust Area */}
         <div className="form-group">
@@ -175,6 +279,31 @@ export default function NewGoalPage() {
           <button type="button" className="btn-secondary" onClick={() => router.push("/goals")}>Cancel</button>
         </div>
       </form>
+
+      <div className="card" style={{ marginTop: "1rem" }}>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
+          <button type="button" className="btn-secondary" onClick={fetchAiSuggestion} disabled={aiLoading}>
+            {aiLoading ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Sparkles size={14} />} AI Goal Suggestion
+          </button>
+          <button type="button" className="btn-secondary" onClick={runQualityCheck} disabled={aiLoading}>
+            {aiLoading ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <ShieldCheck size={14} />} Goal Quality Check
+          </button>
+        </div>
+
+        {aiSuggestion && (
+          <div style={{ marginBottom: "0.75rem", border: "1px solid rgba(99,102,241,0.2)", borderRadius: "0.625rem", padding: "0.75rem", background: "rgba(30,41,59,0.45)" }}>
+            <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#818cf8", marginBottom: "0.35rem" }}>AI Goal Suggestion</div>
+            <pre style={{ margin: 0, whiteSpace: "pre-wrap", color: "#cbd5e1", fontSize: "0.8rem", fontFamily: "inherit" }}>{aiSuggestion}</pre>
+          </div>
+        )}
+
+        {qualityFeedback && (
+          <div style={{ border: "1px solid rgba(52,211,153,0.2)", borderRadius: "0.625rem", padding: "0.75rem", background: "rgba(6,78,59,0.18)" }}>
+            <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#34d399", marginBottom: "0.35rem" }}>Goal Quality Checker</div>
+            <pre style={{ margin: 0, whiteSpace: "pre-wrap", color: "#cbd5e1", fontSize: "0.8rem", fontFamily: "inherit" }}>{qualityFeedback}</pre>
+          </div>
+        )}
+      </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

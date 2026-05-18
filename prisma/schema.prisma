@@ -22,6 +22,9 @@ model User {
   checkIns     CheckIn[]
   auditLogs    AuditLog[]
   unlockedGoals GoalUnlock[] @relation("UnlockedBy")
+  escalationEventsOwned EscalationEvent[] @relation("EscalationSubject")
+  resolvedEscalations EscalationEvent[] @relation("EscalationResolvedBy")
+  escalationDispatches EscalationDispatch[]
 }
 
 model Goal {
@@ -45,6 +48,7 @@ model Goal {
   sharedGoals  SharedGoal[]
   auditLogs    AuditLog[]
   unlockEvents GoalUnlock[]
+  escalationEvents EscalationEvent[]
 }
 
 model SharedGoal {
@@ -55,6 +59,8 @@ model SharedGoal {
   user       User   @relation(fields: [userId], references: [id])
   weightage  Float
   createdAt  DateTime @default(now())
+
+  @@unique([goalId, userId])
 }
 
 model Achievement {
@@ -112,5 +118,49 @@ model GoalUnlock {
   unlockedBy     User     @relation("UnlockedBy", fields: [unlockedById], references: [id])
   previousStatus String
   reason         String
+  createdAt      DateTime @default(now())
+}
+
+model EscalationRule {
+  id            String   @id @default(cuid())
+  type          String   @unique // GOAL_NOT_SUBMITTED | GOAL_PENDING_APPROVAL | CHECKIN_NOT_COMPLETED
+  enabled       Boolean  @default(true)
+  thresholdDays Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model EscalationEvent {
+  id                 String   @id @default(cuid())
+  ruleType           String
+  status             String   @default("OPEN") // OPEN | RESOLVED
+  cycleYear          Int
+  level              Int      @default(1) // 1 employee, 2 manager, 3 skip-level/admin
+  userId             String
+  user               User     @relation("EscalationSubject", fields: [userId], references: [id])
+  goalId             String?
+  goal               Goal?    @relation(fields: [goalId], references: [id])
+  firstTriggeredAt   DateTime @default(now())
+  lastTriggeredAt    DateTime @default(now())
+  nextEscalationAt   DateTime
+  resolutionComment  String?
+  resolvedAt         DateTime?
+  resolvedById       String?
+  resolvedBy         User?    @relation("EscalationResolvedBy", fields: [resolvedById], references: [id])
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  dispatches EscalationDispatch[]
+}
+
+model EscalationDispatch {
+  id             String   @id @default(cuid())
+  eventId        String
+  event          EscalationEvent @relation(fields: [eventId], references: [id])
+  recipientId    String
+  recipient      User     @relation(fields: [recipientId], references: [id])
+  channel        String   // IN_APP | EMAIL
+  deliveryStatus String   // SENT | FAILED | SKIPPED
+  message        String
   createdAt      DateTime @default(now())
 }

@@ -45,6 +45,7 @@ export default async function AdminPage() {
         <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.875rem" }}>
           <Link href="/admin/cycles"><button className="btn-primary">Configure Cycles</button></Link>
           <Link href="/admin/unlock-goals"><button className="btn-secondary">Unlock Goals</button></Link>
+          <Link href="/admin/escalations"><button className="btn-secondary">Escalation Center</button></Link>
         </div>
       </div>
 
@@ -147,7 +148,7 @@ export default async function AdminPage() {
           </div>
           <div className="table-wrapper" style={{ maxHeight: 370, overflowY: "auto" }}>
             <table>
-              <thead><tr><th>Action</th><th>By</th><th>Goal</th><th>Time</th></tr></thead>
+              <thead><tr><th>Action</th><th>By</th><th>Goal</th><th>Details</th><th>Time</th></tr></thead>
               <tbody>
                 {auditLogs.map((log: typeof auditLogs[0]) => (
                   <tr key={log.id}>
@@ -159,6 +160,7 @@ export default async function AdminPage() {
                     </td>
                     <td style={{ fontSize: "0.78rem", color: "#94a3b8" }}>{log.user.name}</td>
                     <td style={{ fontSize: "0.72rem", color: "#64748b", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.goal?.title ?? "—"}</td>
+                    <td style={{ fontSize: "0.72rem", color: "#94a3b8", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.details}</td>
                     <td style={{ fontSize: "0.68rem", color: "#475569" }}>{new Date(log.createdAt).toLocaleString()}</td>
                   </tr>
                 ))}

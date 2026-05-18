@@ -23,12 +23,22 @@ const Q_LABELS = ["", "Q1 (July)", "Q2 (October)", "Q3 (January)", "Q4 (Mar/Apr)
 const STATUS_COLORS: Record<string, string> = { NOT_STARTED: "#94a3b8", ON_TRACK: "#60a5fa", COMPLETED: "#34d399" };
 const STATUS_BG: Record<string, string> = { NOT_STARTED: "rgba(148,163,184,0.1)", ON_TRACK: "rgba(96,165,250,0.1)", COMPLETED: "rgba(52,211,153,0.1)" };
 
-export default function CheckinClient({ goals, role }: { goals: Goal[]; role: string }) {
+type WindowItem = { quarter: number; label: string; start: string; end: string };
+
+export default function CheckinClient({
+  goals, role, cycleYear, windows, activeQuarter,
+}: {
+  goals: Goal[];
+  role: string;
+  cycleYear: number;
+  windows: WindowItem[];
+  activeQuarter: number | null;
+}) {
   const router = useRouter();
   const isManager = role === "MANAGER" || role === "ADMIN";
 
   const [selectedGoal, setSelectedGoal] = useState<string>(goals[0]?.id ?? "");
-  const [achForm, setAchForm] = useState({ quarter: "1", actual: "", status: "ON_TRACK" });
+  const [achForm, setAchForm] = useState({ quarter: String(activeQuarter ?? 1), actual: "", status: "ON_TRACK" });
   const [checkinComment, setCheckinComment] = useState("");
   const [selectedAch, setSelectedAch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -49,7 +59,10 @@ export default function CheckinClient({ goals, role }: { goals: Goal[]; role: st
     });
     setLoading(false);
     if (res.ok) { showMsg("Achievement logged successfully!", true); router.refresh(); }
-    else showMsg("Error logging achievement", false);
+    else {
+      const data = await res.json().catch(() => ({}));
+      showMsg(data.error ?? "Error logging achievement", false);
+    }
   }
 
   async function addCheckin(e: React.FormEvent) {
@@ -62,7 +75,10 @@ export default function CheckinClient({ goals, role }: { goals: Goal[]; role: st
     });
     setLoading(false);
     if (res.ok) { showMsg("Check-in comment saved!", true); setCheckinComment(""); setSelectedAch(""); router.refresh(); }
-    else showMsg("Error saving check-in", false);
+    else {
+      const data = await res.json().catch(() => ({}));
+      showMsg(data.error ?? "Error saving check-in", false);
+    }
   }
 
   return (
@@ -75,6 +91,25 @@ export default function CheckinClient({ goals, role }: { goals: Goal[]; role: st
         </div>
         <h1 className="page-title">Quarterly Check-ins</h1>
         <p className="page-subtitle" style={{ marginBottom: 0 }}>Track and update goal progress for each quarter.</p>
+      </div>
+      <div className="card" style={{ marginBottom: "1rem" }}>
+        <div style={{ color: "#94a3b8", fontSize: "0.82rem" }}>Cycle FY {cycleYear}</div>
+        <div style={{ color: activeQuarter ? "#34d399" : "#fbbf24", fontWeight: 700, marginTop: "0.2rem" }}>
+          {activeQuarter ? `Active Check-in Window: Q${activeQuarter}` : "No active check-in window today"}
+        </div>
+        <div style={{ marginTop: "0.75rem", display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: "0.5rem" }}>
+          {windows.map((w) => {
+            const isActive = activeQuarter === w.quarter;
+            return (
+              <div key={w.quarter} style={{ borderRadius: "0.6rem", border: `1px solid ${isActive ? "rgba(52,211,153,0.4)" : "rgba(99,102,241,0.15)"}`, background: isActive ? "rgba(52,211,153,0.12)" : "rgba(30,41,59,0.35)", padding: "0.55rem" }}>
+                <div style={{ fontWeight: 700, fontSize: "0.75rem", color: isActive ? "#34d399" : "#94a3b8" }}>{w.label}</div>
+                <div style={{ color: "#64748b", fontSize: "0.7rem", marginTop: "0.2rem" }}>
+                  {new Date(w.start).toLocaleDateString()} - {new Date(w.end).toLocaleDateString()}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {msg && (
@@ -202,10 +237,10 @@ export default function CheckinClient({ goals, role }: { goals: Goal[]; role: st
                           <Select value={achForm.quarter} onValueChange={v => setAchForm(f => ({ ...f, quarter: v ?? "1" }))}>
                             <SelectTrigger className="input" style={{ height: "auto" }}><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="1">Q1 (July)</SelectItem>
-                              <SelectItem value="2">Q2 (October)</SelectItem>
-                              <SelectItem value="3">Q3 (January)</SelectItem>
-                              <SelectItem value="4">Q4 (Mar/Apr)</SelectItem>
+                              <SelectItem value="1" disabled={activeQuarter !== 1}>Q1 (July)</SelectItem>
+                              <SelectItem value="2" disabled={activeQuarter !== 2}>Q2 (October)</SelectItem>
+                              <SelectItem value="3" disabled={activeQuarter !== 3}>Q3 (January)</SelectItem>
+                              <SelectItem value="4" disabled={activeQuarter !== 4}>Q4 (Mar/Apr)</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -225,7 +260,7 @@ export default function CheckinClient({ goals, role }: { goals: Goal[]; role: st
                           </Select>
                         </div>
                       </div>
-                      <button className="btn-primary" type="submit" disabled={loading}>
+                      <button className="btn-primary" type="submit" disabled={loading || !activeQuarter || Number(achForm.quarter) !== activeQuarter}>
                         {loading ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Saving…</> : <><CheckCircle2 size={14} /> Log Achievement</>}
                       </button>
                     </form>
